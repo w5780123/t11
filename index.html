@@ -48,6 +48,9 @@
     <script>
         const video = document.getElementById("video");
         let rewindInterval;
+        let isRewinding = false;
+        let rewindFrame;
+        let rewindTimeout;
 
         function togglePlayPause() {
             if (video.paused || video.ended) {
@@ -61,20 +64,36 @@
             video.currentTime = seconds;
         }
 
+        function rewind() {
+            if (isRewinding) {
+                video.currentTime = Math.max(0, video.currentTime - 0.5);
+                rewindFrame = requestAnimationFrame(rewind);
+            }
+        }
+
         function startRewind(event) {
             event.preventDefault(); // 防止 Android 長按觸發選單或其他行為
-            rewindInterval = setInterval(() => {
-                video.currentTime = Math.max(0, video.currentTime - 0.5);
-            }, 100);
+            
+            // 延遲 300ms 確保是「長按」行為，而非普通點擊
+            rewindTimeout = setTimeout(() => {
+                isRewinding = true;
+                rewind();
+            }, 300);
         }
 
         function stopRewind() {
-            clearInterval(rewindInterval);
+            clearTimeout(rewindTimeout); // 防止長按還未生效時取消
+            isRewinding = false;
+            cancelAnimationFrame(rewindFrame);
         }
 
-        document.getElementById("rewindButton").addEventListener("mousedown", startRewind);
-        document.getElementById("rewindButton").addEventListener("mouseup", stopRewind);
-        document.getElementById("rewindButton").addEventListener("mouseleave", stopRewind);
+        const rewindButton = document.getElementById("rewindButton");
+        rewindButton.addEventListener("mousedown", startRewind);
+        rewindButton.addEventListener("mouseup", stopRewind);
+        rewindButton.addEventListener("mouseleave", stopRewind);
+        rewindButton.addEventListener("touchstart", startRewind, { passive: false });
+        rewindButton.addEventListener("touchend", stopRewind);
+        rewindButton.addEventListener("touchcancel", stopRewind);
     </script>
 </body>
 </html>
